@@ -22,4 +22,16 @@ func ConnectAndAutoMigrate() {
 		return
 	}
 	NotesDB.AutoMigrate(&models.Note{})
+	NotesDB.AutoMigrate(&models.User{})
+}
+
+func FindUserByEmail(email string) (*models.User, error) {
+	var user models.User
+	if err := NotesDB.First(&user, "email = ?", email).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &user, nil
 }
