@@ -3,8 +3,10 @@ module github.com/otaxhu/notes-go-application
 go 1.19
 
 require (
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/joho/godotenv v1.5.1
+	golang.org/x/crypto v0.6.0
 	gorm.io/driver/mysql v1.4.6
 	gorm.io/gorm v1.24.5
 )
