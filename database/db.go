@@ -10,14 +10,16 @@ import (
 
 var NotesDB = &gorm.DB{}
 
+var err error
+
 func ConnectAndAutoMigrate() {
-	fmt.Println(NotesDB)
-	fmt.Println(DSN)
-	NotesDB, err := gorm.Open(mysql.Open(DSN), &gorm.Config{})
+
+	// IMPORTANT! no se debe usar los dos puntos antes del "="
+	// ya que se estaria creando otra instancia de &gorm.DB{}
+	NotesDB, err = gorm.Open(mysql.Open(DSN), &gorm.Config{})
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 	NotesDB.AutoMigrate(&models.Note{})
-	fmt.Println(NotesDB)
 }
