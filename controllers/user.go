@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -13,6 +14,8 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 )
+
+var tokenDuration = 48 * time.Hour
 
 type SignUpResponse struct {
 	ID    string `json:"id"`
@@ -30,25 +33,30 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := database.FindUserByEmail(loginUser.Email)
+	if loginUser.Email == "" || loginUser.Password == "" {
+		http.Error(w, "el email y la contraseña son campos obligatorios", http.StatusBadRequest)
+		return
+	}
+
+	dbUser, err := database.FindUserByEmail(loginUser.Email)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if user == nil {
+	if dbUser == nil {
 		http.Error(w, "email or password are incorrect", http.StatusUnauthorized)
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginUser.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(loginUser.Password)); err != nil {
 		http.Error(w, "email or password are incorrect", http.StatusUnauthorized)
 		return
 	}
 
 	claims := models.AppClaims{
-		UserID: loginUser.ID,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(48 * time.Hour).Unix(),
+			ExpiresAt: time.Now().Add(tokenDuration).Unix(),
+			Id:        dbUser.ID,
 		},
 	}
 
@@ -70,7 +78,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func CreateUser(w http.ResponseWriter, r *http.Request) {
+func SignUpUser(w http.ResponseWriter, r *http.Request) {
 	// Decodificar el cuerpo de la solicitud en un nuevo objeto de usuario
 	var newUser models.User
 	if err := json.NewDecoder(r.Body).Decode(&newUser); err != nil {
@@ -121,4 +129,33 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(response)
+}
+
+func MeHandler(w http.ResponseWriter, r *http.Request) {
+	tokenString := strings.TrimSpace(r.Header.Get("Authorization"))
+	token, err := jwt.ParseWithClaims(tokenString, &models.AppClaims{}, func(t *jwt.Token) (interface{}, error) {
+		return []byte(environment.JWTSecret), nil
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	if claims, ok := token.Claims.(*models.AppClaims); ok && token.Valid {
+		user, err := database.FindUserByID(claims.Id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if user == nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		if err := json.NewEncoder(w).Encode(user); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("content-type", "application/json")
+		return
+	}
+	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
