@@ -24,6 +24,9 @@ type SignUpResponse struct {
 type LoginResponse struct {
 	Token string `json:"token"`
 }
+type AuthenticationResponse struct {
+	ID string `json:"id"`
+}
 
 func LoginUser(w http.ResponseWriter, r *http.Request) {
 
@@ -33,7 +36,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if loginUser.Email == "" || loginUser.Password == "" {
+	if strings.TrimSpace(loginUser.Email) == "" || strings.TrimSpace(loginUser.Password) == "" {
 		http.Error(w, "el email y la contraseña son campos obligatorios", http.StatusBadRequest)
 		return
 	}
@@ -71,7 +74,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		Token: tokenString,
 	}
 
-	w.Header().Set("content-type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -86,7 +89,7 @@ func SignUpUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if newUser.Email == "" || newUser.Password == "" {
+	if strings.TrimSpace(newUser.Email) == "" || strings.TrimSpace(newUser.Password) == "" {
 		http.Error(w, "el email y el password son campos obligatorios", http.StatusBadRequest)
 		return
 	}
@@ -150,12 +153,15 @@ func MeHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
-		if err := json.NewEncoder(w).Encode(user); err != nil {
+		response := AuthenticationResponse{
+			ID: claims.Id,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("content-type", "application/json")
-		return
+	} else {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
