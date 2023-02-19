@@ -13,6 +13,7 @@ func InitializeRouter() {
 	r := mux.NewRouter()
 
 	r.Use(middlewares.Logging)
+	r.Use(middlewares.CheckAuth)
 
 	r.HandleFunc("/api", controllers.HandleHome).Methods("GET")
 	r.HandleFunc("/api/notes", controllers.GetNotes).Methods("GET")
@@ -20,8 +21,9 @@ func InitializeRouter() {
 	r.HandleFunc("/api/notes", controllers.CreateNote).Methods("POST")
 	r.HandleFunc("/api/notes/{id}", controllers.UpdateNoteByID).Methods("PUT")
 	r.HandleFunc("/api/notes/{id}", controllers.DeleteNoteByID).Methods("DELETE")
-	r.HandleFunc("/api/users", controllers.CreateUser).Methods("POST")
-	r.HandleFunc("/api/login", controllers.LoginUser).Methods("POST")
+	r.HandleFunc("/signup", controllers.SignUpUser).Methods("POST")
+	r.HandleFunc("/login", controllers.LoginUser).Methods("POST")
+	r.HandleFunc("/me", controllers.MeHandler).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":3000", r))
 }
