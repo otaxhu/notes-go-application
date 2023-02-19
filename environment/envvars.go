@@ -1,4 +1,4 @@
-package database
+package environment
 
 import (
 	"fmt"
@@ -7,9 +7,9 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var envPath = "./database/.env"
+var envPath = "./environment/.env"
 
-// Cargar del archivo llamado ".env" que esta adentro de la carpeta "./database"
+// Cargar del archivo llamado ".env" que esta adentro de la carpeta "./environment"
 var _ = godotenv.Load(envPath)
 
 var (
@@ -20,3 +20,5 @@ var (
 		os.Getenv("port"),
 		os.Getenv("db_name"))
 )
+
+var JWTSecret = os.Getenv("jwt_secret")
