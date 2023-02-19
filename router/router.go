@@ -21,6 +21,7 @@ func InitializeRouter() {
 	r.HandleFunc("/api/notes/{id}", controllers.UpdateNoteByID).Methods("PUT")
 	r.HandleFunc("/api/notes/{id}", controllers.DeleteNoteByID).Methods("DELETE")
 	r.HandleFunc("/api/users", controllers.CreateUser).Methods("POST")
+	r.HandleFunc("/api/login", controllers.LoginUser).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":3000", r))
 }
