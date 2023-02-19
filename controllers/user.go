@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -10,6 +11,34 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 )
+
+type UserResponse struct {
+	ID    string `json:"id"`
+	Email string `json:"email"`
+}
+
+// TODO creacion de JWT para la autenticacion
+func LoginUser(w http.ResponseWriter, r *http.Request) {
+	var loginUser models.User
+	if err := json.NewDecoder(r.Body).Decode(&loginUser); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	user, err := database.FindUserByEmail(loginUser.Email)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if user == nil {
+		http.Error(w, "email or password are incorrect", http.StatusBadRequest)
+		return
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginUser.Password)); err != nil {
+		http.Error(w, "email or password are incorrect", http.StatusBadRequest)
+		return
+	}
+	fmt.Fprintf(w, "%s login succesfully", loginUser.Email)
+}
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	// Decodificar el cuerpo de la solicitud en un nuevo objeto de usuario
@@ -31,7 +60,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if user != nil {
-		http.Error(w, "already registered", http.StatusBadRequest)
+		http.Error(w, "email already registered", http.StatusBadRequest)
 		return
 	}
 
@@ -53,8 +82,13 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	response := UserResponse{
+		ID:    newUser.ID,
+		Email: newUser.Email,
+	}
+
 	// Devolver el nuevo usuario como respuesta
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(newUser)
+	json.NewEncoder(w).Encode(response)
 }
