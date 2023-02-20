@@ -3,17 +3,23 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
+	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/otaxhu/notes-go-application/database"
+	"github.com/otaxhu/notes-go-application/environment"
 	"github.com/otaxhu/notes-go-application/models"
 	"gorm.io/gorm"
 )
 
-// /////////////////////////////////////////////////////////////////////////
-// TODAS LA FUNCIONES LAS HICE ANTES DE CREAR EL SISTEMA DE AUTENTICACION
-// ASI QUE PUEDE QUE NO TENGAN MUCHO SENTIDO
-// ////////////////////////////////////////////////////////////////////////
+type NoteResponse struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
+
 func GetNotes(w http.ResponseWriter, r *http.Request) {
 	var notes []models.Note
 	database.DB.Find(&notes)
@@ -46,20 +52,49 @@ func GetNoteByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateNote(w http.ResponseWriter, r *http.Request) {
-	// TODO: el user pueda crear una nota y luego en la funcion de GetNotes
-	//       reciba las notas que coincida el UserID de la nota con el ID del usuario
-
-	// 1- Suponiendo que el usuario esta autenticado con su JWT en el Authorization Header
-	//    procede a enviar un request el cual va a contener una nota con Title y Description
-
-	// 2- Se procede a crear una instancia de models.Note con el Title, Description.
-	//    el UserID de models.Note va a ser el id del usuario, y el ID de la nota va a ser
-	//    generado con uuid
-
-	// 3- Se guarda en la base de datos
-
-	// 4- Se Codifica en la respuesta el ID de la nota, el Title y la Description
-	//    para saber que funciono
+	tokenString := strings.TrimSpace(r.Header.Get("Authorization"))
+	token, err := jwt.ParseWithClaims(tokenString, &models.AppClaims{}, func(t *jwt.Token) (interface{}, error) {
+		return []byte(environment.JWTSecret), nil
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	if claims, ok := token.Claims.(*models.AppClaims); ok && token.Valid {
+		var note models.Note
+		if err := json.NewDecoder(r.Body).Decode(&note); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		dbUser, err := database.FindUserByID(claims.UserID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if dbUser == nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		id := uuid.New().String()
+		note.ID = id
+		note.UserID = claims.UserID
+		if err := database.DB.Create(&note).Error; err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		response := NoteResponse{
+			ID:          note.ID,
+			Title:       note.Title,
+			Description: note.Description,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+	}
 }
 
 func UpdateNoteByID(w http.ResponseWriter, r *http.Request) {
