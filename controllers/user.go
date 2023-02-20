@@ -59,7 +59,6 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	claims := models.AppClaims{
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(tokenDuration).Unix(),
-			Id:        dbUser.ID,
 		},
 	}
 
@@ -118,7 +117,7 @@ func SignUpUser(w http.ResponseWriter, r *http.Request) {
 	newUser.ID = id
 
 	// Crear el usuario en la base de datos
-	if err := database.NotesDB.Create(&newUser).Error; err != nil {
+	if err := database.DB.Create(&newUser).Error; err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
