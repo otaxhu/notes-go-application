@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var NotesDB = &gorm.DB{}
+var DB = &gorm.DB{}
 
 var err error
 
@@ -17,18 +17,24 @@ func ConnectAndAutoMigrate() {
 
 	// IMPORTANT! no se debe usar los dos puntos antes del "="
 	// ya que se estaria creando otra instancia de &gorm.DB{}
-	NotesDB, err = gorm.Open(mysql.Open(environment.DSN), &gorm.Config{})
+	DB, err = gorm.Open(mysql.Open(environment.DSN), &gorm.Config{})
 	if err != nil {
 		log.Println(err.Error())
 		return
 	}
-	NotesDB.AutoMigrate(&models.Note{})
-	NotesDB.AutoMigrate(&models.User{})
+	if err := DB.Migrator().DropTable(&models.User{}, &models.Note{}); err != nil {
+		log.Println(err.Error())
+		return
+	}
+	if err := DB.AutoMigrate(&models.User{}, &models.Note{}); err != nil {
+		log.Println(err.Error())
+		return
+	}
 }
 
 func FindUserByEmail(email string) (*models.User, error) {
 	var user models.User
-	if err := NotesDB.First(&user, "email = ?", email).Error; err != nil {
+	if err := DB.First(&user, "email = ?", email).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
 		}
@@ -38,7 +44,7 @@ func FindUserByEmail(email string) (*models.User, error) {
 }
 func FindUserByID(id string) (*models.User, error) {
 	var user models.User
-	if err := NotesDB.First(&user, "id = ?", id).Error; err != nil {
+	if err := DB.First(&user, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
 		}
