@@ -34,22 +34,7 @@ func GetNotes(w http.ResponseWriter, r *http.Request) {
 		var notes []models.Note
 		var response []NoteResponse
 		pageSize := 2
-		if strings.TrimSpace(r.URL.Query().Get("page")) == "" {
-			if err := database.DB.Limit(pageSize).Find(&notes, "user_id = ?", claims.UserID).Order("created_at DESC").Scan(&response).Error; err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			if err := json.NewEncoder(w).Encode(response); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			return
-		}
-		pageNumber, err := strconv.Atoi(strings.TrimSpace(r.URL.Query().Get("page")))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
+		pageNumber, _ := strconv.Atoi(strings.TrimSpace(r.URL.Query().Get("page")))
 		if err := database.DB.Offset((pageNumber-1)*pageSize).Limit(pageSize).Find(&notes, "user_id = ?", claims.UserID).Order("created_at DESC").Scan(&response).Error; err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
