@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/golang-jwt/jwt"
@@ -21,13 +22,46 @@ type NoteResponse struct {
 }
 
 func GetNotes(w http.ResponseWriter, r *http.Request) {
-	var notes []models.Note
-	database.DB.Find(&notes)
-	if err := json.NewEncoder(w).Encode(notes); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	tokenString := strings.TrimSpace(r.Header.Get("Authorization"))
+	token, err := jwt.ParseWithClaims(tokenString, &models.AppClaims{}, func(t *jwt.Token) (interface{}, error) {
+		return []byte(environment.JWTSecret), nil
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	w.Header().Set("content-type", "application/json")
+	if claims, ok := token.Claims.(*models.AppClaims); ok && token.Valid {
+		var notes []models.Note
+		var response []NoteResponse
+		pageSize := 2
+		if strings.TrimSpace(r.URL.Query().Get("page")) == "" {
+			if err := database.DB.Limit(pageSize).Find(&notes, "user_id = ?", claims.UserID).Order("created_at DESC").Scan(&response).Error; err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if err := json.NewEncoder(w).Encode(response); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			return
+		}
+		pageNumber, err := strconv.Atoi(strings.TrimSpace(r.URL.Query().Get("page")))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := database.DB.Offset((pageNumber-1)*pageSize).Limit(pageSize).Find(&notes, "user_id = ?", claims.UserID).Order("created_at DESC").Scan(&response).Error; err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+	}
 }
 
 func GetNoteByID(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +127,7 @@ func CreateNote(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
 	}
 }
 
