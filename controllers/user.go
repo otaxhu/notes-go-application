@@ -57,6 +57,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	claims := models.AppClaims{
+		UserID: dbUser.ID,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(tokenDuration).Unix(),
 		},
@@ -143,7 +144,7 @@ func MeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if claims, ok := token.Claims.(*models.AppClaims); ok && token.Valid {
-		user, err := database.FindUserByID(claims.Id)
+		user, err := database.FindUserByID(claims.UserID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -153,7 +154,7 @@ func MeHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		response := AuthenticationResponse{
-			ID: claims.Id,
+			ID: claims.UserID,
 		}
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(response); err != nil {
