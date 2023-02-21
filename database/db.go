@@ -22,10 +22,12 @@ func ConnectAndAutoMigrate() {
 		log.Println(err.Error())
 		return
 	}
-	if err := DB.Migrator().DropTable(&models.User{}, &models.Note{}); err != nil {
-		log.Println(err.Error())
-		return
-	}
+	/*
+		if err := DB.Migrator().DropTable(&models.User{}, &models.Note{}); err != nil {
+			log.Println(err.Error())
+			return
+		}
+	*/
 	if err := DB.AutoMigrate(&models.User{}, &models.Note{}); err != nil {
 		log.Println(err.Error())
 		return
@@ -51,4 +53,12 @@ func FindUserByID(id string) (*models.User, error) {
 		return nil, err
 	}
 	return &user, nil
+}
+
+func FindNoteByID(userID, id string) (*models.Note, error) {
+	var note models.Note
+	if err := DB.First(&note, "user_id = ? AND id = ?", userID, id).Error; err != nil {
+		return nil, err
+	}
+	return &note, nil
 }
