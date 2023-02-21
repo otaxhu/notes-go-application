@@ -4,7 +4,7 @@
 
 ### Introduccion a este proyecto:
 
-Este es un proyecto de API REST escrito en el lenguaje de programacion Go (Golang), el objetivo de este proyecto es mejorar mis habilidades y conocer mas acerca de este lenguaje en especifico, y saber mas acerca del Backend y todo lo que eso conlleva, estare usando varias librerias las cuales nombrare adelante.
+Este es un proyecto de API REST escrito en el lenguaje de programacion Go (Golang), el objetivo de este proyecto es mejorar mis habilidades y conocer mas acerca de este lenguaje en especifico, y saber mas acerca del Backend y todo lo que eso conlleva, estare usando varias librerias las cuales nombro a continuacion.
 
 ### Librerias:
 
