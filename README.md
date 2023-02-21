@@ -43,6 +43,6 @@ Bueno, en realidad nose como se podria implementar en el frontend jaja, pero se 
 
 ![image](https://user-images.githubusercontent.com/93091522/220224726-e8356fa1-1f5d-4f19-89ac-89b692ab842e.png)
 
-6. Ahora podras acceder a todas las endpoints disponibles en este backend, pero la que mas interesa endpoint de /api/notes puedes tratar de experimentar con esa endpoint todas las operaciones CRUD de las notas
+6. Ahora podras acceder a todas las endpoints disponibles en este backend, pero la que mas interesa es la endpoint de /api/notes puedes tratar de experimentar con esa endpoint todas las operaciones CRUD de las notas
 
 ### Gracias por visitar este repositorio!
